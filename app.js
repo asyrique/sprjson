@@ -58,7 +58,7 @@ function processForm(err, response, body, res){
         userData["oldIC"] = ($("#LabelIClama")[0]["children"][0] === undefined) ? '' : $("#LabelIClama")[0]["children"][0]["data"]; //TOFIX -- This doesn't parse because the OldIC span is empty
         userData["name"] = $("#Labelnama")[0]["children"][0]["data"];
         birthdate = $("#LabelTlahir")[0]["children"][0]["data"];
-        userData['birthdateISO'] = new Date(birthdate.substr(birthdate.length - 4) + "-" + userData["newIC"].substr(2,2) + "-" + userData["newIC"].substr(4,2));
+        userData['birthdate'] = new Date(birthdate.substr(birthdate.length - 4) + "-" + userData["newIC"].substr(2,2) + "-" + userData["newIC"].substr(4,2));
         if ($("#Labeljantina")[0]["children"][0]["data"] == 'LELAKI'){
             userData['gender'] = 'male';
         } else{
