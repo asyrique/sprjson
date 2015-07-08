@@ -7,5 +7,5 @@ Given an IC number (old or new) at the API endpoint `http://sprjson.herokuapp.co
 
 Future features:
 
-- [ ] Convert current birthdate field to a ISODate object
+- [x] Convert current birthdate field to a ISODate object
 - [ ] Add regex capability to reduce complexity in the Locality/DUN/Parliament levels.
