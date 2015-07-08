@@ -10,7 +10,7 @@ var port    = process.env.PORT || 3000;
 
 //Routes
 app.get('/', function(req, res){
-    res.status(200).json({'api': 'SPR-JSON', 'version': '1.0', 'status': 'healthy' });
+    res.status(200).json({'api': 'SPR-JSON', 'version': '1.0.1', 'status': 'healthy' });
 });
 
 app.get('/ic/:icNum', function(req, res){ //TODO -- FIX CALLBACK HELL. Implement promises
