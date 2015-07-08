@@ -1,6 +1,6 @@
 {
   "name": "sprjson",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A JSON wrapper for the SPR query webpage",
   "main": "app.js",
   "scripts": {

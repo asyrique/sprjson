@@ -6,7 +6,7 @@ var request = require('request');
 var cheerio = require('cheerio');
 var express = require('express');
 var app     = express();
-var port    = process.env.PORT || 8080;
+var port    = process.env.PORT || 3000;
 
 //Routes
 app.get('/', function(req, res){
@@ -17,23 +17,32 @@ app.get('/ic/:icNum', function(req, res){ //TODO -- FIX CALLBACK HELL. Implement
     //Create the Form vars
     var requestForm = {};
     request.get(requestUrl, function(err, response, body){
-        var keys = {};
-        getKeys(err, response, body, res, keys);
-        requestForm = {
-            'Semak': "Semak",
-            '__EVENTVALIDATION': keys["eventValidation"],
-            '__VIEWSTATE': keys["viewState"],
-            'txtIC': req.params.icNum
-        };
+        if (err){
+            res.status(500).json({'error': err});
+        } else {
+            var keys = {};
+            getKeys(response, body, res, keys);
+            requestForm = {
+                'Semak': "Semak",
+                '__EVENTVALIDATION': keys["eventValidation"],
+                '__VIEWSTATE': keys["viewState"],
+                'txtIC': req.params.icNum
+            };
 
-        request.post({
-            url: queryUrl,
-            form: requestForm,
-            },
-            function(err, response, body){
-                processForm(err, response, body, res);
-            }
-        );
+            request.post({
+                url: queryUrl,
+                form: requestForm,
+                },
+                function(err, response, body){
+                    if (err){
+                        res.status(500).json({'error': err});
+                        console.log(err);
+                    } else{
+                        processForm(response, body, res);
+                    }
+                }
+            );
+        }
     });
 });
 
@@ -44,10 +53,8 @@ var server = app.listen(port, function(){
 });
 
 
-function processForm(err, response, body, res){
-    if (err){
-        res.status(500).json({'error': err});
-    } else if (body.indexOf('Record not found.') !== -1){
+function processForm(response, body, res){
+    if (body.indexOf('Record not found.') !== -1){
         res.status(404).json({'error': 'Record not found'});
     } else{
         var $ = cheerio.load(body);
@@ -55,7 +62,7 @@ function processForm(err, response, body, res){
 
         //Insert userdata
         userData["newIC"] = $("#LabelIC")[0]["children"][0]["data"];
-        userData["oldIC"] = ($("#LabelIClama")[0]["children"][0] === undefined) ? '' : $("#LabelIClama")[0]["children"][0]["data"]; //TOFIX -- This doesn't parse because the OldIC span is empty
+        userData["oldIC"] = ($("#LabelIClama")[0]["children"][0] === undefined) ? '' : $("#LabelIClama")[0]["children"][0]["data"];
         userData["name"] = $("#Labelnama")[0]["children"][0]["data"];
         birthdate = $("#LabelTlahir")[0]["children"][0]["data"];
         userData['birthdate'] = new Date(birthdate.substr(birthdate.length - 4) + "-" + userData["newIC"].substr(2,2) + "-" + userData["newIC"].substr(4,2));
@@ -64,10 +71,24 @@ function processForm(err, response, body, res){
         } else{
             userData['gender'] = 'female';
         }
-        userData['locality'] = $("#Labellokaliti")[0]["children"][0]["data"];
-        userData['votingDistrict'] = $("#Labeldm")[0]["children"][0]["data"];
-        userData['DUN'] = $("#Labeldun")[0]["children"][0]["data"];
-        userData['parliament'] = $("#Labelpar")[0]["children"][0]["data"];
+        userData['localityString'] = $("#Labellokaliti")[0]["children"][0]["data"];
+        localityNumArray = userData['localityString'].split(" - ")[0].split("/").map(function(s) { return String.prototype.trim.apply(s); }); //Trims each item in array
+        userData['locality'] = {
+            'num': localityNumArray[3],
+            'label': $("#Labellokaliti")[0]["children"][0]["data"].split(" - ")[1].trim(" ")
+        };
+        userData['votingDistrict'] = {
+            'num': localityNumArray[2],
+            'label': $("#Labeldm")[0]["children"][0]["data"].split(" - ")[1].trim(" ")
+        };
+        userData['DUN'] = {
+            'num': localityNumArray[1],
+            'label': $("#Labeldun")[0]["children"][0]["data"].split(" - ")[1].trim(" ")
+        };
+        userData['parliament'] = {
+            'num': localityNumArray[0],
+            'label': $("#Labelpar")[0]["children"][0]["data"].split(" - ")[1].trim(" ")
+        };
         userData['state'] = $("#Labelnegeri")[0]["children"][0]["data"];
         //Unknown function for now
         userData['status'] = $("#LABELSTATUSDPI")[0]["children"][0]["data"];
@@ -76,12 +97,8 @@ function processForm(err, response, body, res){
     }
 }
 
-function getKeys(err, response, body, res, keys){
-    if (err){
-        res.status(500).json({'error': err});
-    } else{
-        var $ = cheerio.load(body);
-        keys['viewState'] = $("#__VIEWSTATE").attr('value');
-        keys['eventValidation'] = $("#__EVENTVALIDATION").attr('value');
-    }
+function getKeys(response, body, res, keys){
+    var $ = cheerio.load(body);
+    keys['viewState'] = $("#__VIEWSTATE").attr('value');
+    keys['eventValidation'] = $("#__EVENTVALIDATION").attr('value');
 }
