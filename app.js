@@ -18,7 +18,7 @@ app.get('/ic/:icNum', function(req, res){ //TODO -- FIX CALLBACK HELL. Implement
     var requestForm = {};
     request.get(requestUrl, function(err, response, body){
         var keys = {};
-        getKeys(err, response, body, keys);
+        getKeys(err, response, body, res, keys);
         requestForm = {
             'Semak': "Semak",
             '__EVENTVALIDATION': keys["eventValidation"],
@@ -46,9 +46,9 @@ var server = app.listen(port, function(){
 
 function processForm(err, response, body, res){
     if (err){
-        res.send(err);
+        res.status(500).json({'error': err});
     } else if (body.indexOf('Record not found.') !== -1){
-        res.status(404).json({'message': 'Record not found'});
+        res.status(404).json({'error': 'Record not found'});
     } else{
         var $ = cheerio.load(body);
         var userData = {};
@@ -57,7 +57,8 @@ function processForm(err, response, body, res){
         userData["newIC"] = $("#LabelIC")[0]["children"][0]["data"];
         userData["oldIC"] = ($("#LabelIClama")[0]["children"][0] === undefined) ? '' : $("#LabelIClama")[0]["children"][0]["data"]; //TOFIX -- This doesn't parse because the OldIC span is empty
         userData["name"] = $("#Labelnama")[0]["children"][0]["data"];
-        userData['birthdate'] = $("#LabelTlahir")[0]["children"][0]["data"];
+        birthdate = $("#LabelTlahir")[0]["children"][0]["data"];
+        userData['birthdateISO'] = new Date(birthdate.substr(birthdate.length - 4) + "-" + userData["newIC"].substr(2,2) + "-" + userData["newIC"].substr(4,2));
         if ($("#Labeljantina")[0]["children"][0]["data"] == 'LELAKI'){
             userData['gender'] = 'male';
         } else{
@@ -75,9 +76,9 @@ function processForm(err, response, body, res){
     }
 }
 
-function getKeys(err, res, body, keys){
+function getKeys(err, response, body, res, keys){
     if (err){
-        res.send(err);
+        res.status(500).json({'error': err});
     } else{
         var $ = cheerio.load(body);
         keys['viewState'] = $("#__VIEWSTATE").attr('value');
